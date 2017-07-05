@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
+		<title>日历生成器</title>
+
+		<style type="text/css">
+			body {
+				padding: 20px;
+			}
+			
+			.box {
+				border: solid 3px #ddd;
+				margin: 0 auto;
+				border-radius: 6px;
+				padding: 20px;
+			}
+			
+			#myTable {
+				font-size: 18px;
+			}
+			
+			#myTable * {
+				border-color: #333;
+			}
+			
+			.date-fk {
+				z-index: 999;
+				position: fixed;
+				left: 0;
+				top: 50%;
+				width: 100%;
+				height: 210px;
+				border: solid 3px #fff;
+				background-color: rgba(255, 255, 0, .3);
+				cursor: move;
+			}
+		</style>
+
+	</head>
+
+	<body>
+		<h1 class="text-center">日历生成器</h1>
+		<hr />
+
+		<div class="date-fk"></div>
+		<div class="panel panel-default">
+
+			<div class="panel-heading">控制台</div>
+			<div class="panel-body" id="app-build">
+
+				<div class="row">
+					<div class="col-lg-6">
+						<div class="input-group input-group-lg">
+							<span class="input-group-addon">开始年份</span>
+							<input type="text" v-model='startTime' class="form-control">
+						</div>
+					</div>
+					<div class="col-lg-6">
+						<div class="input-group input-group-lg">
+							<span class="input-group-addon">结束年份</span>
+							<input type="text" v-model='endTime' class="form-control">
+						</div>
+					</div>
+
+				</div>
+				<h3>（年份跨距大可能会造成性能问题）</h3>
+				<h3>（框可拖动）</h3>
+				<button type="button" v-on:click="build" class="btn btn-danger btn-lg">生成</button>
+				<button type="button" v-on:click="show" class="btn btn-danger btn-lg">隐藏框</button>
+
+			</div>
+
+		</div>
+		<div class="panel panel-default">
+			<table class="table table-bordered text " id="myTable">
+				<!--标题-->
+				<tr id="tableHead">
+					<th>一</th>
+					<th>二</th>
+					<th>三</th>
+					<th>四</th>
+					<th>五</th>
+					<th>六</th>
+					<th>日</th>
+				</tr>
+
+			</table>
+		</div>
+
+		<script src="js/jquery-2.1.0.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/bootstrap.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/jquery-ui.min.js" type="text/javascript" charset="utf-8"></script>
+		<script src="js/vue.js" type="text/javascript" charset="utf-8"></script>
+
+		<script type="text/javascript">
+			//jqui
+			$(".date-fk").draggable({
+				axis: "y"
+			});
+			//vue实例
+			var appbuild = new Vue({
+				el: '#app-build',
+				data: {
+					startTime: 2016,
+					endTime: 2017
+				},
+				methods: {
+					build: function() {
+
+						build(this.startTime, this.endTime); //调用生成日历的函数，并且传入两个参数
+
+					},
+					show: function() {
+
+						var startTime = $('.date-fk'); //获取开始年份
+						startTime.toggle();
+					}
+				}
+			});
+
+			build(2017, 2017); //调用生成日历的函数，并且传入两个参数，默认生成2017
+
+			//此函数两个个参数，第一个参数是开始年份，第二个参数是结束年份
+			function build(startTime, endTime) {
+
+				var myTable = $('#myTable'); //获取表格
+				var tableHead = $('#tableHead'); //获取表格
+				myTable.empty();
+				myTable.append(tableHead);
+
+				var myDate = new Date(startTime + '/1/1').getDay(); //开始周数
+				if(myDate == 0) {
+					//因为获取的最大是0并不是7，所以需要转换一下
+					myDate = 7;
+				}
+
+				var tr = $('<tr></tr>'); //创建开始tr
+				myTable.append(tr); //将开始tr添加到表格中
+
+				for(var j = 1; j <= myDate - 1; j++) {
+					//这个for是填充开始日期前的空缺，比如从周六开始，那么周一到周五都应该有空缺
+					var td = $('<td></td>');
+					tr.append(td);
+				}
+
+				for(var n = startTime; n <= endTime; n++) {
+					//控制年份
+
+					for(var l = 1; l <= 12; l++) {
+						//控制月份
+
+						var days = new Date(n, l, 0).getDate(); //获取当月天数
+
+						for(var i = 1; i <= days; i++) {
+							//控制天数
+
+							if(myDate > 7) {
+								//如果星期几种子大于7，也就是等于8的时候
+								myDate = 1; //重置种子为1，因为每周只有7天
+								tr = $('<tr></tr>'); //等七天到达，就需要重新创建一个tr行
+								myTable.append(tr); //将新创建的添加到表格中
+							}
+
+							var td = $('<td></td>'); //创建用于存放每天的日期单元格
+
+							var year = n;
+							var month = l;
+							var day = i;
+
+							td.text(year + '年' + month + '月' + day + '日'); //设置单元格内容，n代表年，l代表月，i代表日
+
+							td.addClass('bg-info');
+
+							td.attr('id', '' + year + month + day);
+
+							//下面的if是用于让每个月显示不同颜色，以便区分
+							if(l % 2 == 0) {
+								td.css('background-color', '#1A1A1A');
+								td.css('color', '#fff');
+
+							} else {
+								td.css('background-color', '#262626');
+								td.css('color', '#777');
+							}
+
+							tr.append(td); //将这个日期单元格添加到tr中。
+
+							myDate++; //让星期数自增1
+						}
+					}
+				}
+			}
+		</script>
+
+	</body>
+
+</html>
